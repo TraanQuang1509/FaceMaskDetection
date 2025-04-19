@@ -2,15 +2,17 @@ import cv2
 import numpy as np
 import tensorflow as tf
 import mediapipe as mp
+from tensorflow.lite.python.interpreter import Interpreter
 import time
 
 prev_time = 0
 # Load trained mask classifier
-from tensorflow.lite.python.interpreter import Interpreter
+# full model
+# model = tf.keras.models.load_model("mask_classifier_mnv2.keras")
 
+# lite model
 interpreter = Interpreter(model_path="best_model_lite.tflite")
 interpreter.allocate_tensors()
-
 input_details = interpreter.get_input_details()
 output_details = interpreter.get_output_details()
 
@@ -57,13 +59,16 @@ while cap.isOpened():
                 continue
 
             face_resized = cv2.resize(face, (IMG_SIZE, IMG_SIZE))
+            # full model
             # face_input = np.expand_dims(face_resized / 255.0, axis=0)
-
             # preds = model.predict(face_input, verbose=0)
+
+            # lite model
             face_input = np.expand_dims(face_resized / 255.0, axis=0).astype(np.float32)
             interpreter.set_tensor(input_details[0]['index'], face_input)
             interpreter.invoke()
             preds = interpreter.get_tensor(output_details[0]['index'])
+
             class_id = np.argmax(preds)
             label = class_names[class_id]
             conf = preds[0][class_id]
